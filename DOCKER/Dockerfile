@@ -1,17 +1,16 @@
 FROM golang:1.15-alpine AS builder
 
-RUN apk update && \
-    apk upgrade && \
-    apk add bash git gmp-dev sudo cmake build-base
-
-COPY . /go/src/github.com/dashevo/tenderdash
+RUN apk add --update --no-cache bash build-base cmake git gmp-dev
 
 WORKDIR /go/src/github.com/dashevo/tenderdash
+
+COPY . .
 
 RUN make install-bls
 RUN make build-linux
 
-FROM alpine:3.9
+
+FROM alpine:3.14
 LABEL maintainer="developers@dash.org"
 
 # Tenderdash will be looking for the genesis file in /tenderdash/config/genesis.json
@@ -26,11 +25,9 @@ ENV TMHOME /tenderdash
 # jq and curl used for extracting `pub_key` from private validator while
 # deploying tenderdash with Kubernetes. It is nice to have bash so the users
 # could execute bash commands.
-RUN apk update && \
-    apk upgrade && \
-    apk --no-cache add curl jq bash gmp libstdc++ && \
-    addgroup tmuser && \
-    adduser -S -G tmuser tmuser -h "$TMHOME"
+RUN apk --update --no-cache add curl jq bash gmp libstdc++
+RUN addgroup -g 1000 tmuser
+RUN adduser -S -G tmuser -h "$TMHOME" -u 100 tmuser
 
 # Run the container with tmuser by default. (UID=100, GID=1000)
 USER tmuser
@@ -40,19 +37,16 @@ WORKDIR $TMHOME
 # p2p, rpc and prometheus port
 EXPOSE 26656 26657 26660
 
-STOPSIGNAL SIGTERM
-
-COPY --from=builder /go/src/github.com/dashevo/tenderdash/build/tenderdash /usr/bin/tenderdash
-
 # You can overwrite these before the first run to influence
 # config.json and genesis.json. Additionally, you can override
 # CMD to add parameters to `tenderdash node`.
 ENV PROXY_APP=kvstore MONIKER=dockernode CHAIN_ID=dockerchain
 
+COPY --from=builder /go/src/github.com/dashevo/tenderdash/build/tenderdash /usr/bin/tenderdash
 COPY ./DOCKER/docker-entrypoint.sh /usr/local/bin/
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node"]
 
 # Expose the data directory as a volume since there's mutable state in there
-VOLUME [ "$TMHOME" ]
+VOLUME ["$TMHOME"]
