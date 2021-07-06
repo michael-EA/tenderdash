@@ -64,7 +64,7 @@ func TestMsgToProto(t *testing.T) {
 	pv := types.NewMockPVForQuorum(quorumHash)
 	pk, err := pv.GetPubKey(quorumHash)
 	require.NoError(t, err)
-	val := types.NewValidatorDefaultVotingPower(pk, pv.ProTxHash)
+	val := types.NewValidatorDefaultVotingPower(&pk, pv.ProTxHash)
 
 	vote, err := types.MakeVote(
 		1, types.BlockID{}, types.StateID{}, &types.ValidatorSet{Proposer: val, Validators: []*types.Validator{val}, QuorumHash: quorumHash},
