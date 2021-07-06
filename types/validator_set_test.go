@@ -49,7 +49,7 @@ func TestValidatorSetBasic(t *testing.T) {
 	assert.Equal(t, []byte(nil), vset.Hash())
 	// add
 	val = randValidator(vset.TotalVotingPower())
-	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}, val.PubKey, crypto.RandQuorumHash()))
+	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}, *val.PubKey, crypto.RandQuorumHash()))
 
 	assert.True(t, vset.HasProTxHash(val.ProTxHash))
 	idx, _ = vset.GetByProTxHash(val.ProTxHash)
@@ -64,13 +64,14 @@ func TestValidatorSetBasic(t *testing.T) {
 
 	// update
 	val = randValidator(vset.TotalVotingPower())
-	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}, val.PubKey, crypto.RandQuorumHash()))
+	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}, *val.PubKey, crypto.RandQuorumHash()))
 	_, val = vset.GetByProTxHash(val.ProTxHash)
-	val.PubKey = bls12381.GenPrivKey().PubKey()
+	pubKey := bls12381.GenPrivKey().PubKey()
+	val.PubKey = &pubKey
 	proposerPriority := val.ProposerPriority
 
 	val.ProposerPriority = 0
-	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}, val.PubKey, crypto.RandQuorumHash()))
+	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}, *val.PubKey, crypto.RandQuorumHash()))
 	_, val = vset.GetByProTxHash(val.ProTxHash)
 	assert.Equal(t, proposerPriority, val.ProposerPriority)
 
@@ -83,7 +84,7 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 
 	goodValSet, _ := GenerateValidatorSet(4)
 	badValSet, _ := GenerateValidatorSet(4)
-	badValSet.ThresholdPublicKey = val.PubKey
+	badValSet.ThresholdPublicKey = *val.PubKey
 
 	testCases := []struct {
 		testName string
@@ -128,7 +129,7 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 			testName: "Validator set needs members even with quorum hash",
 			vals: ValidatorSet{
 				Validators:         []*Validator{val},
-				ThresholdPublicKey: val.PubKey,
+				ThresholdPublicKey: *val.PubKey,
 				QuorumHash:         crypto.RandQuorumHash(),
 				HasPublicKeys:      true,
 			},
@@ -176,7 +177,7 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 			vals: ValidatorSet{
 				Validators:         []*Validator{val},
 				Proposer:           val,
-				ThresholdPublicKey: val.PubKey,
+				ThresholdPublicKey: *val.PubKey,
 				HasPublicKeys:      true,
 			},
 			err: true,
@@ -187,7 +188,7 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 			vals: ValidatorSet{
 				Validators:         []*Validator{val},
 				Proposer:           val,
-				ThresholdPublicKey: val.PubKey,
+				ThresholdPublicKey: *val.PubKey,
 				QuorumHash:         crypto.RandQuorumHash(),
 				HasPublicKeys:      true,
 			},
@@ -267,7 +268,7 @@ func BenchmarkValidatorSetCopy(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		privKey := bls12381.GenPrivKey()
 		pubKey := privKey.PubKey()
-		val := NewValidatorDefaultVotingPower(pubKey, crypto.ProTxHash{})
+		val := NewValidatorDefaultVotingPower(&pubKey, crypto.ProTxHash{})
 		err := vset.UpdateWithChangeSet([]*Validator{val}, nil, crypto.RandQuorumHash())
 		if err != nil {
 			panic("Failed to add validator")
@@ -545,9 +546,9 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 		proTxHash  = crypto.RandProTxHash()
 		privKey    = bls12381.GenPrivKey()
 		pubKey     = privKey.PubKey()
-		v1         = NewValidatorDefaultVotingPower(pubKey, proTxHash)
+		v1         = NewValidatorDefaultVotingPower(&pubKey, proTxHash)
 		quorumHash = crypto.RandQuorumHash()
-		vset       = NewValidatorSet([]*Validator{v1}, v1.PubKey, btcjson.LLMQType_5_60, quorumHash, true)
+		vset       = NewValidatorSet([]*Validator{v1}, *v1.PubKey, btcjson.LLMQType_5_60, quorumHash, true)
 
 		chainID = "Lalande21185"
 	)

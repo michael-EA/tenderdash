@@ -354,7 +354,7 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 		validators := make([]*types.Validator, len(genDoc.Validators))
 		hasAllPublicKeys := true
 		for i, val := range genDoc.Validators {
-			validators[i] = types.NewValidatorDefaultVotingPower(val.PubKey, val.ProTxHash)
+			validators[i] = types.NewValidatorDefaultVotingPower(&val.PubKey, val.ProTxHash)
 			if val.PubKey == nil {
 				hasAllPublicKeys = false
 			}

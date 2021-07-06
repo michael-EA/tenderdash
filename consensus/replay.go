@@ -323,7 +323,7 @@ func (h *Handshaker) ReplayBlocks(
 		if h.genDoc.QuorumHash != nil && len(h.genDoc.QuorumHash) == crypto.DefaultHashSize {
 			validators := make([]*types.Validator, len(h.genDoc.Validators))
 			for i, val := range h.genDoc.Validators {
-				validators[i] = types.NewValidatorDefaultVotingPower(val.PubKey, val.ProTxHash)
+				validators[i] = types.NewValidatorDefaultVotingPower(&val.PubKey, val.ProTxHash)
 				err := validators[i].ValidateBasic()
 				if err != nil {
 					return nil, fmt.Errorf("replay blocks error when validating validator: %s", err)

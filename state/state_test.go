@@ -285,7 +285,7 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 		state, err = sm.UpdateState(state, &firstNodeProTxHash, blockID, &header, responses, validatorUpdates, thresholdPublicKeyUpdate, quorumHash)
 		require.NoError(t, err)
 		validator := state.Validators.Validators[0]
-		testCases[i-1] = validator.PubKey
+		testCases[i-1] = *validator.PubKey
 		err := stateStore.Save(state)
 		require.NoError(t, err)
 	}
@@ -441,7 +441,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	val1VotingPower := types.DefaultDashVotingPower
 	val1ProTxHash := proTxHashes[0]
 	val1PubKey := privateKeys[0].PubKey()
-	val1 := &types.Validator{ProTxHash: val1ProTxHash, PubKey: val1PubKey, VotingPower: val1VotingPower}
+	val1 := &types.Validator{ProTxHash: val1ProTxHash, PubKey: &val1PubKey, VotingPower: val1VotingPower}
 
 	quorumHash := crypto.RandQuorumHash()
 	state.Validators = types.NewValidatorSet([]*types.Validator{val1}, val1PubKey, btcjson.LLMQType_5_60, quorumHash, true)
@@ -571,7 +571,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	val1VotingPower := types.DefaultDashVotingPower
 	val1ProTxHash := proTxHashes[0]
 	val1PubKey := privateKeys[0].PubKey()
-	val1 := &types.Validator{ProTxHash: val1ProTxHash, PubKey: val1PubKey, VotingPower: val1VotingPower}
+	val1 := &types.Validator{ProTxHash: val1ProTxHash, PubKey: &val1PubKey, VotingPower: val1VotingPower}
 
 	// reset state validators to above validator, the threshold key is just the validator key since there is only 1 validator
 	quorumHash := crypto.RandQuorumHash()
@@ -873,7 +873,7 @@ func TestFourAddFourMinusOneGenesisValidators(t *testing.T) {
 	// remove one genesis validator:
 	proTxHashes, privateKeys4, thresholdPublicKey4 := bls12381.CreatePrivLLMQDataOnProTxHashesDefaultThreshold(proTxHashes[1:])
 	var abciValidatorUpdates []abci.ValidatorUpdate
-	updatedPubKey, err := cryptoenc.PubKeyToProto(originalValidatorSet.Validators[0].PubKey)
+	updatedPubKey, err := cryptoenc.PubKeyToProto(*originalValidatorSet.Validators[0].PubKey)
 	require.NoError(t, err)
 	updatePreviousVal := abci.ValidatorUpdate{ProTxHash: proTxHashes[0], Power: 0, PubKey: &updatedPubKey}
 	abciValidatorUpdates = append(abciValidatorUpdates, updatePreviousVal)
@@ -1022,7 +1022,7 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	var newPubkey crypto.PubKey
 	for _, valUpdate := range validatorUpdates {
 		if bytes.Equal(valUpdate.ProTxHash.Bytes(), proTxHash.Bytes()) {
-			newPubkey = valUpdate.PubKey
+			newPubkey = *valUpdate.PubKey
 		}
 	}
 

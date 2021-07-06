@@ -310,7 +310,7 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 		panic(err)
 	}
 	proTxHash, _ := pv.GetProTxHash()
-	val := NewValidator(pubKey, DefaultDashVotingPower, proTxHash)
+	val := NewValidator(&pubKey, DefaultDashVotingPower, proTxHash)
 
 	voteA := makeMockVote(height, 0, 0, proTxHash, randBlockID(), randStateID())
 	vA := voteA.ToProto()
@@ -322,7 +322,7 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 	_ = pv.SignVote(chainID, quorumType, quorumHash, vB)
 	voteB.BlockSignature = vB.BlockSignature
 	voteB.StateSignature = vB.StateSignature
-	return NewDuplicateVoteEvidence(voteA, voteB, time, NewValidatorSet([]*Validator{val}, val.PubKey, quorumType, quorumHash, true))
+	return NewDuplicateVoteEvidence(voteA, voteB, time, NewValidatorSet([]*Validator{val}, *val.PubKey, quorumType, quorumHash, true))
 }
 
 // assumes voting power to be DefaultDashVotingPower and validator to be the only one in the set

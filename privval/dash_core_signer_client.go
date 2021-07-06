@@ -73,7 +73,7 @@ func (sc *DashCoreSignerClient) ExtractIntoValidator(quorumHash crypto.QuorumHas
 		panic("proTxHash wrong length")
 	}
 	return &types.Validator{
-		PubKey:      pubKey,
+		PubKey:      &pubKey,
 		VotingPower: types.DefaultDashVotingPower,
 		ProTxHash:   proTxHash,
 	}

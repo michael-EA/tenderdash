@@ -238,7 +238,7 @@ func TestReportConflictingVotes(t *testing.T) {
 	state := pool.State()
 	state.LastBlockHeight++
 	state.LastBlockTime = ev.Time()
-	state.LastValidators = types.NewValidatorSet([]*types.Validator{val}, val.PubKey, btcjson.LLMQType_5_60,
+	state.LastValidators = types.NewValidatorSet([]*types.Validator{val}, *val.PubKey, btcjson.LLMQType_5_60,
 		quorumHash, true)
 	pool.Update(state, []types.Evidence{})
 
@@ -408,13 +408,13 @@ func initializeValidatorState(privVal types.PrivValidator, height int64, quorumT
 	if len(proTxHash) != 32 {
 		panic("proTxHash len not correct")
 	}
-	validator := &types.Validator{VotingPower: types.DefaultDashVotingPower, PubKey: pubKey, ProTxHash: proTxHash}
+	validator := &types.Validator{VotingPower: types.DefaultDashVotingPower, PubKey: &pubKey, ProTxHash: proTxHash}
 
 	// create validator set and state
 	valSet := &types.ValidatorSet{
 		Validators:         []*types.Validator{validator},
 		Proposer:           validator,
-		ThresholdPublicKey: validator.PubKey,
+		ThresholdPublicKey: *validator.PubKey,
 		QuorumType:         quorumType,
 		QuorumHash:         quorumHash,
 	}

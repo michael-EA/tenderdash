@@ -52,7 +52,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 		msg string
 	}{
 		{
-			val: NewValidatorDefaultVotingPower(pubKey, priv.ProTxHash),
+			val: NewValidatorDefaultVotingPower(&pubKey, priv.ProTxHash),
 			err: false,
 			msg: "no error",
 		},
@@ -71,13 +71,13 @@ func TestValidatorValidateBasic(t *testing.T) {
 			msg: "no error",
 		},
 		{
-			val: NewValidator(pubKey, -1, priv.ProTxHash),
+			val: NewValidator(&pubKey, -1, priv.ProTxHash),
 			err: true,
 			msg: "validator has negative voting power",
 		},
 		{
 			val: &Validator{
-				PubKey:    pubKey,
+				PubKey:    &pubKey,
 				ProTxHash: crypto.CRandBytes(12),
 			},
 			err: true,
@@ -85,7 +85,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 		},
 		{
 			val: &Validator{
-				PubKey:    pubKey,
+				PubKey:    &pubKey,
 				ProTxHash: nil,
 			},
 			err: true,

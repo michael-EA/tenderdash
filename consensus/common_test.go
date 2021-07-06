@@ -773,7 +773,7 @@ func updateConsensusNetAddNewValidators(css []*State, height int64, addValCount 
 				privVal.UpdatePrivateKey(privKeys[j], quorumHash, thresholdPublicKey, height+3)
 				updatedValidators[j] = privVal.ExtractIntoValidator(quorumHash)
 				publicKeys[j] = privKeys[j].PubKey()
-				if !bytes.Equal(updatedValidators[j].PubKey.Bytes(), publicKeys[j].Bytes()) {
+				if !bytes.Equal((*updatedValidators[j].PubKey).Bytes(), publicKeys[j].Bytes()) {
 					panic("the validator public key should match the public key")
 				}
 				validatorProTxHashesAsByteArray[j] = validatorProTxHashes[j].Bytes()
@@ -871,7 +871,7 @@ func updateConsensusNetRemoveValidatorsWithProTxHashes(css []*State, height int6
 				privVal.UpdatePrivateKey(privKeys[i], quorumHash, thresholdPublicKey, height+3)
 				updatedValidators[i] = privVal.ExtractIntoValidator(quorumHash)
 				publicKeys[i] = privKeys[i].PubKey()
-				if !bytes.Equal(updatedValidators[i].PubKey.Bytes(), publicKeys[i].Bytes()) {
+				if !bytes.Equal((*updatedValidators[i].PubKey).Bytes(), publicKeys[i].Bytes()) {
 					panic("the validator public key should match the public key")
 				}
 				validatorProTxHashesAsByteArray[i] = validatorProTxHashes[i].Bytes()
@@ -977,9 +977,10 @@ func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.G
 	privateKeys, proTxHashes, thresholdPublicKey := bls12381.CreatePrivLLMQDataDefaultThreshold(numValidators)
 	quorumHash := crypto.RandQuorumHash()
 	for i := 0; i < numValidators; i++ {
-		val := types.NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), proTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		val := types.NewValidatorDefaultVotingPower(&pubKey, proTxHashes[i])
 		validators[i] = types.GenesisValidator{
-			PubKey:    val.PubKey,
+			PubKey:    *val.PubKey,
 			Power:     val.VotingPower,
 			ProTxHash: val.ProTxHash,
 		}

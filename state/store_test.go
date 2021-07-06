@@ -111,11 +111,11 @@ func TestPruneStates(t *testing.T) {
 			proTxHash := crypto.RandProTxHash()
 			// Generate a bunch of state data. Validators change for heights ending with 3, and
 			// parameters when ending with 5.
-			validator := &types.Validator{VotingPower: types.DefaultDashVotingPower, PubKey: pk, ProTxHash: proTxHash}
+			validator := &types.Validator{VotingPower: types.DefaultDashVotingPower, PubKey: &pk, ProTxHash: proTxHash}
 			validatorSet := &types.ValidatorSet{
 				Validators:         []*types.Validator{validator},
 				Proposer:           validator,
-				ThresholdPublicKey: validator.PubKey,
+				ThresholdPublicKey: *validator.PubKey,
 				QuorumHash:         crypto.RandQuorumHash(),
 			}
 			valsChanged := int64(0)

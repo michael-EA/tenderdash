@@ -95,7 +95,7 @@ func (tm2pb) ValidatorUpdate(val *Validator) abci.ValidatorUpdate {
 		ProTxHash: val.ProTxHash,
 	}
 	if val.PubKey != nil {
-		pk, err := cryptoenc.PubKeyToProto(val.PubKey)
+		pk, err := cryptoenc.PubKeyToProto(*val.PubKey)
 		if err != nil {
 			panic(err)
 		}
@@ -167,7 +167,7 @@ func (pb2tm) ValidatorUpdates(vals []abci.ValidatorUpdate) ([]*Validator, error)
 				return nil, err
 			}
 		}
-		tmVals[i] = NewValidator(pub, v.Power, v.ProTxHash)
+		tmVals[i] = NewValidator(&pub, v.Power, v.ProTxHash)
 	}
 	return tmVals, nil
 }
@@ -187,7 +187,7 @@ func (pb2tm) ValidatorUpdatesFromValidatorSet(valSetUpdate *abci.ValidatorSetUpd
 				return nil, nil, nil, err
 			}
 		}
-		tmVals[i] = NewValidator(pub, v.Power, v.ProTxHash)
+		tmVals[i] = NewValidator(&pub, v.Power, v.ProTxHash)
 		err = tmVals[i].ValidateBasic()
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("validator updates from validator set error when validating validator: %s", err)

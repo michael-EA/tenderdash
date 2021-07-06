@@ -260,11 +260,15 @@ func (pv *MockPV) ExtractIntoValidator(quorumHash crypto.QuorumHash) *Validator 
 	if len(pv.ProTxHash) != crypto.DefaultHashSize {
 		panic("proTxHash wrong length")
 	}
-	return &Validator{
-		PubKey:      pubKey,
+	val := Validator{
 		VotingPower: DefaultDashVotingPower,
 		ProTxHash:   pv.ProTxHash,
 	}
+
+	if pubKey != nil {
+		val.PubKey = &pubKey
+	}
+	return &val
 }
 
 // String returns a string representation of the MockPV.

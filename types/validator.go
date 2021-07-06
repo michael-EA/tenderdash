@@ -18,11 +18,11 @@ import (
 // make sure to update that method if changes are made here
 // The ProTxHash is part of Dash additions required for BLS threshold signatures
 type Validator struct {
-	PubKey      crypto.PubKey `json:"pub_key"`
-	VotingPower int64         `json:"voting_power"`
-	ProTxHash   ProTxHash     `json:"pro_tx_hash"`
+	PubKey      *crypto.PubKey  `json:"pub_key"`
+	VotingPower int64           `json:"voting_power"`
+	ProTxHash   ProTxHash       `json:"pro_tx_hash"`
 
-	ProposerPriority int64 `json:"proposer_priority"`
+	ProposerPriority int64      `json:"proposer_priority"`
 }
 
 func NewTestValidatorGeneratedFromProTxHash(proTxHash crypto.ProTxHash) *Validator {
@@ -41,12 +41,12 @@ func NewTestRemoveValidatorGeneratedFromProTxHash(proTxHash crypto.ProTxHash) *V
 	}
 }
 
-func NewValidatorDefaultVotingPower(pubKey crypto.PubKey, proTxHash []byte) *Validator {
+func NewValidatorDefaultVotingPower(pubKey *crypto.PubKey, proTxHash []byte) *Validator {
 	return NewValidator(pubKey, DefaultDashVotingPower, proTxHash)
 }
 
 // NewValidator returns a new validator with the given pubkey and voting power.
-func NewValidator(pubKey crypto.PubKey, votingPower int64, proTxHash []byte) *Validator {
+func NewValidator(pubKey *crypto.PubKey, votingPower int64, proTxHash []byte) *Validator {
 	val := &Validator{
 		PubKey:           pubKey,
 		VotingPower:      votingPower,
@@ -83,8 +83,8 @@ func (v *Validator) ValidatePubKey() error {
 		return errors.New("validator does not have a public key")
 	}
 
-	if len(v.PubKey.Bytes()) != bls12381.PubKeySize {
-		return fmt.Errorf("validator PubKey is the wrong size: %X", v.PubKey.Bytes())
+	if len((*v.PubKey).Bytes()) != bls12381.PubKeySize {
+		return fmt.Errorf("validator PubKey is the wrong size: %X", (*v.PubKey).Bytes())
 	}
 	return nil
 }
@@ -160,21 +160,7 @@ func ValidatorListString(vals []*Validator) string {
 // as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
 func (v *Validator) Bytes() []byte {
-	pk, err := ce.PubKeyToProto(v.PubKey)
-	if err != nil {
-		panic(err)
-	}
-
-	pbv := tmproto.SimpleValidator{
-		PubKey:      &pk,
-		VotingPower: v.VotingPower,
-	}
-
-	bz, err := pbv.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return bz
+	return v.ProTxHash.Bytes()
 }
 
 // ToProto converts Validator to protobuf
@@ -194,32 +180,37 @@ func (v *Validator) ToProto() (*tmproto.Validator, error) {
 	}
 
 	if v.PubKey != nil {
-		pk, err := ce.PubKeyToProto(v.PubKey)
+		pk, err := ce.PubKeyToProto(*v.PubKey)
 		if err != nil {
 			return nil, err
 		}
-		vp.PubKey = pk
+		vp.PubKey = &pk
 	}
 
 	return &vp, nil
 }
 
-// FromProto sets a protobuf Validator to the given pointer.
+// ValidatorFromProto sets a protobuf Validator to the given pointer.
 // It returns an error if the public key is invalid.
 func ValidatorFromProto(vp *tmproto.Validator) (*Validator, error) {
 	if vp == nil {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyFromProto(vp.PubKey)
-	if err != nil {
-		return nil, err
-	}
+
 	v := new(Validator)
-	v.PubKey = pk
+
 	v.VotingPower = vp.GetVotingPower()
 	v.ProposerPriority = vp.GetProposerPriority()
 	v.ProTxHash = vp.ProTxHash
+
+	if vp.PubKey != nil {
+		pk, err := ce.PubKeyFromProto(*vp.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		v.PubKey = &pk
+	}
 
 	return v, nil
 }
@@ -240,6 +231,6 @@ func RandValidator() (*Validator, PrivValidator) {
 	if err != nil {
 		panic(fmt.Errorf("could not retrieve pubkey %w", err))
 	}
-	val := NewValidatorDefaultVotingPower(pubKey, proTxHash)
+	val := NewValidatorDefaultVotingPower(&pubKey, proTxHash)
 	return val, privVal
 }

@@ -183,7 +183,7 @@ func (vals *ValidatorSet) ThresholdPublicKeyValid() error {
 		return errors.New("threshold public key is wrong size")
 	}
 	if len(vals.Validators) == 1 && vals.HasPublicKeys {
-		if !vals.Validators[0].PubKey.Equals(vals.ThresholdPublicKey) {
+		if !(*vals.Validators[0].PubKey).Equals(vals.ThresholdPublicKey) {
 			return errors.New("incorrect threshold public key")
 		}
 	} else if len(vals.Validators) > 1 && vals.HasPublicKeys {
@@ -423,7 +423,7 @@ func (vals *ValidatorSet) GetProTxHashesAsByteArrays() [][]byte {
 func (vals *ValidatorSet) GetPublicKeys() []crypto.PubKey {
 	publicKeys := make([]crypto.PubKey, len(vals.Validators))
 	for i, val := range vals.Validators {
-		publicKeys[i] = val.PubKey
+		publicKeys[i] = *val.PubKey
 	}
 	return publicKeys
 }
@@ -456,7 +456,8 @@ func (vals *ValidatorSet) RegenerateWithNewKeys() (*ValidatorSet, []PrivValidato
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], orderedProTxHashes[i], quorumHash, thresholdPublicKey,
 			false, false)
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), orderedProTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, orderedProTxHashes[i])
 	}
 
 	// Just to make sure
@@ -935,7 +936,7 @@ func (e ErrNotEnoughVotingPowerSigned) Error() string {
 func (vals *ValidatorSet) ABCIEquivalentValidatorUpdates() *abci.ValidatorSetUpdate {
 	var valUpdates []abci.ValidatorUpdate
 	for i := 0; i < len(vals.Validators); i++ {
-		valUpdate := TM2PB.NewValidatorUpdate(vals.Validators[i].PubKey, DefaultDashVotingPower,
+		valUpdate := TM2PB.NewValidatorUpdate(*vals.Validators[i].PubKey, DefaultDashVotingPower,
 			vals.Validators[i].ProTxHash)
 		valUpdates = append(valUpdates, valUpdate)
 	}
@@ -1192,7 +1193,8 @@ func GenerateValidatorSet(numValidators int) (*ValidatorSet, []PrivValidator) {
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], proTxHashes[i], quorumHash,
 			thresholdPublicKey, false, false)
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), proTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, proTxHashes[i])
 	}
 
 	sort.Sort(PrivValidatorsByProTxHash(privValidators))
@@ -1220,7 +1222,8 @@ func GenerateTestValidatorSetWithProTxHashes(proTxHashes []crypto.ProTxHash, pow
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], orderedProTxHashes[i], quorumHash,
 			thresholdPublicKey, false, false)
-		valz[i] = NewValidator(privateKeys[i].PubKey(), originalPowerMap[string(orderedProTxHashes[i])], orderedProTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidator(&pubKey, originalPowerMap[string(orderedProTxHashes[i])], orderedProTxHashes[i])
 	}
 
 	sort.Sort(PrivValidatorsByProTxHash(privValidators))
@@ -1242,7 +1245,8 @@ func GenerateTestValidatorSetWithProTxHashesDefaultPower(proTxHashes []crypto.Pr
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], orderedProTxHashes[i], quorumHash,
 			thresholdPublicKey, false, false)
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), orderedProTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, orderedProTxHashes[i])
 	}
 
 	sort.Sort(PrivValidatorsByProTxHash(privValidators))
@@ -1262,7 +1266,8 @@ func GenerateMockValidatorSet(numValidators int) (*ValidatorSet, []*MockPV) {
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], proTxHashes[i], quorumHash,
 			thresholdPublicKey, false, false)
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), proTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, proTxHashes[i])
 	}
 
 	sort.Sort(MockPrivValidatorsByProTxHash(privValidators))
@@ -1333,7 +1338,8 @@ func GenerateValidatorSetUsingProTxHashes(proTxHashes []crypto.ProTxHash) (*Vali
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], orderedProTxHashes[i], quorumHash,
 			thresholdPublicKey, false, false)
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), orderedProTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, orderedProTxHashes[i])
 	}
 
 	sort.Sort(PrivValidatorsByProTxHash(privValidators))
@@ -1356,7 +1362,8 @@ func GenerateMockValidatorSetUsingProTxHashes(proTxHashes []crypto.ProTxHash) (*
 	for i := 0; i < numValidators; i++ {
 		privValidators[i] = NewMockPVWithParams(privateKeys[i], orderedProTxHashes[i], quorumHash,
 			thresholdPublicKey, false, false)
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), orderedProTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, orderedProTxHashes[i])
 	}
 
 	sort.Sort(MockPrivValidatorsByProTxHash(privValidators))
@@ -1385,7 +1392,8 @@ func GenerateMockValidatorSetUpdatingPrivateValidatorsAtHeight(proTxHashes []cry
 			privValidators[i] = NewMockPVWithParams(privateKeys[i], orderedProTxHashes[i], quorumHash,
 				thresholdPublicKey, false, false)
 		}
-		valz[i] = NewValidatorDefaultVotingPower(privateKeys[i].PubKey(), orderedProTxHashes[i])
+		pubKey := privateKeys[i].PubKey()
+		valz[i] = NewValidatorDefaultVotingPower(&pubKey, orderedProTxHashes[i])
 	}
 
 	sort.Sort(MockPrivValidatorsByProTxHash(privValidators))

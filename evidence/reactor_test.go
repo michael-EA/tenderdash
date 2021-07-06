@@ -387,14 +387,14 @@ func exampleVote(t byte) *types.Vote {
 
 // nolint:lll //ignore line length for tests
 func TestEvidenceVectors(t *testing.T) {
-
+	pubKey := bls12381.GenPrivKey().PubKey()
 	val := &types.Validator{
 		ProTxHash:   crypto.ProTxHashFromSeedBytes([]byte("validator_pro_tx_hash")),
-		PubKey:      bls12381.GenPrivKey().PubKey(),
+		PubKey:      &pubKey,
 		VotingPower: types.DefaultDashVotingPower,
 	}
 
-	valSet := types.NewValidatorSet([]*types.Validator{val}, val.PubKey, btcjson.LLMQType_5_60, crypto.RandQuorumHash(), true)
+	valSet := types.NewValidatorSet([]*types.Validator{val}, *val.PubKey, btcjson.LLMQType_5_60, crypto.RandQuorumHash(), true)
 
 	dupl := types.NewDuplicateVoteEvidence(
 		exampleVote(1),

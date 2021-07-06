@@ -31,12 +31,13 @@ import (
 
 // Consensus sentinel errors
 var (
-	ErrInvalidProposalSignature   = errors.New("error invalid proposal signature")
-	ErrInvalidProposalCoreHeight  = errors.New("error invalid proposal core height")
-	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
-	ErrAddingVote                 = errors.New("error adding vote")
-	ErrAddingCommit               = errors.New("error adding commit")
-	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
+	ErrProposalSignatureCantBeVerified = errors.New("error proposal signature cant be verified")
+	ErrInvalidProposalSignature        = errors.New("error invalid proposal signature")
+	ErrInvalidProposalCoreHeight       = errors.New("error invalid proposal core height")
+	ErrInvalidProposalPOLRound         = errors.New("error invalid proposal POL round")
+	ErrAddingVote                      = errors.New("error adding vote")
+	ErrAddingCommit                    = errors.New("error adding commit")
+	ErrSignatureFoundInPastBlocks      = errors.New("found signature from the same key")
 
 	errProTxHashIsNotSet = errors.New("protxhash is not set. Look for \"Can't get private validator protxhash\" errors")
 )
@@ -2031,12 +2032,14 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 	//	hex.EncodeToString(proposalRequestId), hex.EncodeToString(signId), hex.EncodeToString(cs.state.Validators.QuorumHash),
 	//	hex.EncodeToString(proposalBlockSignBytes))
 
+    if proposer.PubKey == nil {
+		return ErrProposalSignatureCantBeVerified
+	}
 
-
-	if !proposer.PubKey.VerifySignatureDigest(proposalBlockSignId, proposal.Signature) {
+	if !(*proposer.PubKey).VerifySignatureDigest(proposalBlockSignId, proposal.Signature) {
 		cs.Logger.Debug("error verifying signature", "height", proposal.Height,
 			"round", proposal.Round, "proposer", proposer.ProTxHash.ShortString(), "signature", proposal.Signature, "pubkey",
-			proposer.PubKey.Bytes(), "quorumType", cs.state.Validators.QuorumType,
+			(*proposer.PubKey).Bytes(), "quorumType", cs.state.Validators.QuorumType,
 			"quorumHash", cs.state.Validators.QuorumHash, "proposalSignId", proposalBlockSignId)
 		return ErrInvalidProposalSignature
 	}

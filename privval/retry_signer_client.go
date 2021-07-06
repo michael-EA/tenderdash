@@ -53,7 +53,7 @@ func (sc *RetrySignerClient) ExtractIntoValidator(quorumHash crypto.QuorumHash) 
 		panic("proTxHash wrong length")
 	}
 	return &types.Validator{
-		PubKey:      pubKey,
+		PubKey:      &pubKey,
 		VotingPower: types.DefaultDashVotingPower,
 		ProTxHash:   proTxHash,
 	}

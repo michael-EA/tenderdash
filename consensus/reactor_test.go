@@ -345,7 +345,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	updateTransactions := make([][]byte, len(updatedValidators)+2)
 	for i := 0; i < len(updatedValidators); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions[i] = kvstore.MakeValSetChangeTx(updatedValidators[i].ProTxHash, &abciPubKey, testMinPower)
 	}
@@ -387,7 +387,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	updateTransactions2 := make([][]byte, len(updatedValidators)+2)
 	for i := 0; i < len(updatedValidators); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions2[i] = kvstore.MakeValSetChangeTx(updatedValidators[i].ProTxHash, &abciPubKey, testMinPower)
 	}
@@ -421,7 +421,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	updateTransactions3 := make([][]byte, len(updatedValidators)+2)
 	for i := 0; i < len(updatedValidators); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions3[i] = kvstore.MakeValSetChangeTx(updatedValidators[i].ProTxHash, &abciPubKey, testMinPower)
 	}

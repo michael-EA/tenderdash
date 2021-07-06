@@ -61,9 +61,9 @@ func TestValidator_Sets(t *testing.T) {
 				require.Equal(t, valScheduleValidator.ProTxHash, validator.ProTxHash,
 					"mismatching validator proTxHashes at height %v (%X <=> %X", h,
 					valScheduleValidator.ProTxHash, validator.ProTxHash)
-				require.Equal(t, valScheduleValidator.PubKey.Bytes(), validator.PubKey.Bytes(),
+				require.Equal(t, (*valScheduleValidator.PubKey).Bytes(), (*validator.PubKey).Bytes(),
 					"mismatching validator %X publicKey at height %v (%X <=> %X",
-					valScheduleValidator.ProTxHash, h, valScheduleValidator.PubKey.Bytes(), validator.PubKey.Bytes())
+					valScheduleValidator.ProTxHash, h, (*valScheduleValidator.PubKey).Bytes(), (*validator.PubKey).Bytes())
 			}
 			require.Equal(t, valSchedule.Set.Validators, validators,
 				"incorrect validator set at height %v", h)
@@ -174,7 +174,7 @@ func (s *validatorSchedule) Increment(heights int64) {
 func makeVals(valMap map[*e2e.Node]crypto.PubKey) []*types.Validator {
 	vals := make([]*types.Validator, 0, len(valMap))
 	for node, pubkey := range valMap {
-		vals = append(vals, types.NewValidatorDefaultVotingPower(pubkey, node.ProTxHash))
+		vals = append(vals, types.NewValidatorDefaultVotingPower(&pubkey, node.ProTxHash))
 	}
 	return vals
 }

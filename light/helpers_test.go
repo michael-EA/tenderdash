@@ -84,7 +84,8 @@ func (pkz privKeys) Extend(n int) privKeys {
 func (pkz privKeys) ToValidators(thresholdPublicKey crypto.PubKey) *types.ValidatorSet {
 	res := make([]*types.Validator, len(pkz))
 	for i, k := range pkz {
-		res[i] = types.NewValidatorDefaultVotingPower(k.PubKey(), crypto.Sha256(k.PubKey().Address()))
+		pubKey := k.PubKey()
+		res[i] = types.NewValidatorDefaultVotingPower(&pubKey, crypto.Sha256(k.PubKey().Address()))
 	}
 	// Quorum hash is pseudorandom
 	return types.NewValidatorSet(res, thresholdPublicKey, btcjson.LLMQType_5_60, crypto.Sha256(thresholdPublicKey.Bytes()), true)
@@ -116,7 +117,7 @@ func (pkz privKeys) signHeader(header *types.Header, valSet *types.ValidatorSet,
 		if privateKey == nil {
 			panic("no priv key")
 		}
-		if !privateKey.PubKey().Equals(val.PubKey) {
+		if !privateKey.PubKey().Equals(*val.PubKey) {
 			panic("light client keys do not match")
 		}
 		vote := makeVote(header, valSet, proTxHash, pkz[i], blockID, stateID)

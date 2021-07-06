@@ -378,7 +378,7 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	updateTransactions := make([][]byte, len(updatedValidators2)+2)
 	for i := 0; i < len(updatedValidators2); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators2[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators2[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions[i] = kvstore.MakeValSetChangeTx(updatedValidators2[i].ProTxHash, &abciPubKey, testMinPower)
 	}
@@ -446,13 +446,13 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	updateTransactions2 := make([][]byte, len(updatedValidators4)+2)
 	for i := 0; i < len(updatedValidators4); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators4[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators4[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions2[i] = kvstore.MakeValSetChangeTx(updatedValidators4[i].ProTxHash, &abciPubKey, testMinPower)
 		var oldPubKey crypto.PubKey
 		for _, validatorAt2 := range updatedValidators2 {
 			if bytes.Equal(validatorAt2.ProTxHash, updatedValidators4[i].ProTxHash) {
-				oldPubKey = validatorAt2.PubKey
+				oldPubKey = *validatorAt2.PubKey
 			}
 		}
 		fmt.Printf("update at height 4 (for 6) %v %v -> %v\n", updatedValidators4[i].ProTxHash, oldPubKey, updatedValidators4[i].PubKey)
@@ -576,13 +576,13 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	updateTransactions3 := make([][]byte, len(updatedValidators6)+2)
 	for i := 0; i < len(updatedValidators6); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators6[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators6[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions3[i] = kvstore.MakeValSetChangeTx(updatedValidators6[i].ProTxHash, &abciPubKey, testMinPower)
 		var oldPubKey crypto.PubKey
 		for _, validatorAt4 := range updatedValidators4 {
 			if bytes.Equal(validatorAt4.ProTxHash, updatedValidators6[i].ProTxHash) {
-				oldPubKey = validatorAt4.PubKey
+				oldPubKey = *validatorAt4.PubKey
 			}
 		}
 		fmt.Printf("update at height 6 (for 8) %v %v -> %v\n", updatedValidators6[i].ProTxHash, oldPubKey, updatedValidators6[i].PubKey)
@@ -633,7 +633,7 @@ func TestSimulateValidatorsChange(t *testing.T) {
 		t.Fatal("wrong proposer", err)
 	}
 
-	if !bytes.Equal(proposerPubKey2.Bytes(), proposerPubKey.Bytes()) {
+	if !bytes.Equal(proposerPubKey2.Bytes(), (*proposerPubKey).Bytes()) {
 		t.Fatal("wrong proposer pubKey", err)
 	}
 
@@ -722,7 +722,7 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	updateTransactions4 := make([][]byte, len(updatedValidators8)+2)
 	for i := 0; i < len(updatedValidators8); i++ {
 		// start by adding all validator transactions
-		abciPubKey, err := cryptoenc.PubKeyToProto(updatedValidators8[i].PubKey)
+		abciPubKey, err := cryptoenc.PubKeyToProto(*updatedValidators8[i].PubKey)
 		require.NoError(t, err)
 		updateTransactions4[i] = kvstore.MakeValSetChangeTx(updatedValidators8[i].ProTxHash, &abciPubKey, testMinPower)
 	}
@@ -754,12 +754,12 @@ func TestSimulateValidatorsChange(t *testing.T) {
 
 	proposerPubKey2, err = vss[proposerIndex].GetPubKey(validatorsAtProposalHeight.QuorumHash)
 
-	if !bytes.Equal(proposerPubKey2.Bytes(), proposerPubKey.Bytes()) {
+	if !bytes.Equal(proposerPubKey2.Bytes(), (*proposerPubKey).Bytes()) {
 		//t.Fatal("wrong proposer pubKey", err)
 	}
 
 	css[0].Logger.Debug("signed proposal","height", proposal.Height, "round", proposal.Round,
-		"proposer", proposerProTxHash.ShortString(), "signature", p.Signature, "pubkey", proposerPubKey.Bytes(), "quorum type",
+		"proposer", proposerProTxHash.ShortString(), "signature", p.Signature, "pubkey", (*proposerPubKey).Bytes(), "quorum type",
 		validatorsAtProposalHeight.QuorumType, "quorum hash", validatorsAtProposalHeight.QuorumHash, "signId", signId)
 
 	proposal.Signature = p.Signature
@@ -1501,7 +1501,7 @@ func (bs *mockBlockStore) PruneBlocks(height int64) (uint64, error) {
 func TestHandshakeUpdatesValidators(t *testing.T) {
 	val, _ := types.RandValidator()
 	randQuorumHash := crypto.RandQuorumHash()
-	vals := types.NewValidatorSet([]*types.Validator{val}, val.PubKey, btcjson.LLMQType_5_60, randQuorumHash, true)
+	vals := types.NewValidatorSet([]*types.Validator{val}, *val.PubKey, btcjson.LLMQType_5_60, randQuorumHash, true)
 	abciValidatorSetUpdates := types.TM2PB.ValidatorUpdates(vals)
 	app := &initChainApp{vals: &abciValidatorSetUpdates}
 	clientCreator := proxy.NewLocalClientCreator(app)

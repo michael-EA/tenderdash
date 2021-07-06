@@ -69,7 +69,12 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 		return fmt.Errorf("proTxHash %X was not a validator at height %d", e.VoteA.ValidatorProTxHash, e.Height())
 	}
 	proTxHash := val.ProTxHash
-	pubKey := val.PubKey
+
+	if val.PubKey == nil {
+		return fmt.Errorf("we can not verify duplicate vote")
+	}
+
+	pubKey := *val.PubKey
 
 	// H/R/S must be the same
 	if e.VoteA.Height != e.VoteB.Height ||
