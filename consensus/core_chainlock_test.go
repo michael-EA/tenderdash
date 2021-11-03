@@ -12,14 +12,14 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
-func newCounterWithCoreChainLocks() abci.Application {
+func newCounterWithCoreChainLocks(string) abci.Application {
 	counterApp := counter.NewApplication(true)
 	counterApp.HasCoreChainLocks = true
 	counterApp.CurrentCoreChainLockHeight = 1
 	return counterApp
 }
 
-func newCounterWithBackwardsCoreChainLocks() abci.Application {
+func newCounterWithBackwardsCoreChainLocks(string) abci.Application {
 	counterApp := counter.NewApplication(true)
 	counterApp.HasCoreChainLocks = true
 	counterApp.CurrentCoreChainLockHeight = 100

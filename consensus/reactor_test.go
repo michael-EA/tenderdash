@@ -232,7 +232,7 @@ func TestReactorWithEvidence(t *testing.T) {
 				thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 				defer os.RemoveAll(thisConfig.RootDir)
 				ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
-				app := appFunc()
+				app := appFunc(fmt.Sprintf("%s_%d", testName, i))
 				vals := types.TM2PB.ValidatorUpdates(state.Validators)
 				app.InitChain(abci.RequestInitChain{ValidatorSet: &vals})
 
@@ -416,6 +416,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	css, _, _, cleanup := randConsensusNetWithPeers(
 		nVals,
 		nPeers,
+		0,
 		"consensus_val_set_changes_test",
 		newMockTickerFunc(true),
 		newPersistentKVStoreWithPath)

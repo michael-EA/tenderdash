@@ -708,35 +708,17 @@ func consensusLogger() log.Logger {
 	}, "debug").With("module", "consensus")
 }
 
-func randConsensusNet(nValidators int, initialHeight int64, testName string, tickerFunc func() TimeoutTicker,
-	appFunc func() abci.Application, configOpts ...func(*cfg.Config)) ([]*State, cleanupFunc) {
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, initialHeight)
-	css := make([]*State, nValidators)
-	logger := consensusLogger()
-	configRootDirs := make([]string, 0, nValidators)
-	for i := 0; i < nValidators; i++ {
-		stateDB := dbm.NewMemDB() // each state needs its own db
-		stateStore := sm.NewStore(stateDB)
-		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
-		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
-		configRootDirs = append(configRootDirs, thisConfig.RootDir)
-		for _, opt := range configOpts {
-			opt(thisConfig)
-		}
-		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
-		app := appFunc()
-		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		app.InitChain(abci.RequestInitChain{ValidatorSet: &vals})
-
-		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB)
-		css[i].SetTimeoutTicker(tickerFunc())
-		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
-	}
-	return css, func() {
-		for _, dir := range configRootDirs {
-			os.RemoveAll(dir)
-		}
-	}
+// randConsensusNet generates a consensus net without any non-validator peers.
+func randConsensusNet(
+	nValidators int,
+	initialHeight int64,
+	testName string,
+	tickerFunc func() TimeoutTicker,
+	appFunc func(string) abci.Application,
+	configOpts ...func(*cfg.Config),
+) ([]*State, cleanupFunc) {
+	css, _, _, cleanup := randConsensusNetWithPeers(nValidators, 0, initialHeight, testName, tickerFunc, appFunc, configOpts...)
+	return css, cleanup
 }
 
 func updateConsensusNetAddNewValidators(css []*State, height int64, addValCount int, validate bool) ([]*types.Validator, []crypto.ProTxHash, crypto.PubKey, crypto.QuorumHash) {
@@ -909,68 +891,113 @@ func updateConsensusNetRemoveValidatorsWithProTxHashes(css []*State, height int6
 	return updatedValidators, removedValidators, thresholdPublicKey, quorumHash
 }
 
+// randConsensusNetWithPeers creates a new consensus network with a few peers.
 // nPeers = nValidators + nNotValidator
 func randConsensusNetWithPeers(
 	nValidators,
 	nPeers int,
+	initialHeight int64,
 	testName string,
 	tickerFunc func() TimeoutTicker,
 	appFunc func(string) abci.Application,
+	configOpts ...func(*cfg.Config),
 ) ([]*State, *types.GenesisDoc, *cfg.Config, cleanupFunc) {
-	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, 1)
-	css := make([]*State, nPeers)
-	logger := consensusLogger()
-	var peer0Config *cfg.Config
-	configRootDirs := make([]string, 0, nPeers)
-	for i := 0; i < nPeers; i++ {
-		stateDB := dbm.NewMemDB() // each state needs its own db
-		stateStore := sm.NewStore(stateDB)
-		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
-		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
-		configRootDirs = append(configRootDirs, thisConfig.RootDir)
-		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
-		if i == 0 {
-			peer0Config = thisConfig
-		}
-		var privVal types.PrivValidator
-		if i < nValidators {
-			privVal = privVals[i]
-		} else {
-			tempKeyFile, err := ioutil.TempFile("", "priv_validator_key_")
-			if err != nil {
-				panic(err)
-			}
-			tempStateFile, err := ioutil.TempFile("", "priv_validator_state_")
-			if err != nil {
-				panic(err)
-			}
-
-			privVal = privval.GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
-
-			// These validator might not have the public keys, for testing purposes let's assume they don't
-			state.Validators.HasPublicKeys = false
-			state.NextValidators.HasPublicKeys = false
-		}
-
-		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
-		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		if _, ok := app.(*kvstore.PersistentKVStoreApplication); ok {
-			// simulate handshake, receive app version. If don't do this, replay test will fail
-			state.Version.Consensus.App = kvstore.ProtocolVersion
-		}
-		app.InitChain(abci.RequestInitChain{ValidatorSet: &vals})
-		// sm.SaveState(stateDB,state)	//height 1's validatorsInfo already saved in LoadStateFromDBOrGenesisDoc above
-
-		css[i] = newStateWithConfig(thisConfig, state, privVal, app)
-		css[i].SetTimeoutTicker(tickerFunc())
-		proTxHash, _ := privVal.GetProTxHash()
-		css[i].SetLogger(logger.With("validator", i, "proTxHash", proTxHash.ShortString(), "module", "consensus"))
+	if nPeers < nValidators {
+		nPeers = nValidators
 	}
-	return css, genDoc, peer0Config, func() {
+	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, initialHeight)
+	// Initialize peers which are NOT validators
+	for i := nValidators; i < nPeers; i++ {
+		tempKeyFile, err := ioutil.TempFile("", "priv_validator_key_")
+		if err != nil {
+			panic(err)
+		}
+		tempStateFile, err := ioutil.TempFile("", "priv_validator_state_")
+		if err != nil {
+			panic(err)
+		}
+		privVal := privval.GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
+		privVals = append(privVals, privVal)
+	}
+	css, configs, cleanup := consensusNet(nPeers, testName, tickerFunc, appFunc, genDoc, privVals, configOpts)
+	for i := nValidators; i < nPeers; i++ {
+		// Non-validators might not have the public keys, for testing purposes let's assume they don't
+		css[i].state.Validators.HasPublicKeys = false
+		css[i].state.NextValidators.HasPublicKeys = false
+	}
+	return css, genDoc, configs[0], cleanup
+}
+
+// consensusNet is an internal function that does the actual initialization of the
+// consensus network. Used by `randConsensusNet.*`
+func consensusNet(
+	nPeers int,
+	testName string,
+	tickerFunc func() TimeoutTicker,
+	appFunc func(string) abci.Application,
+	genDoc *types.GenesisDoc,
+	privVals []types.PrivValidator,
+	configOpts []func(*cfg.Config),
+) ([]*State, []*cfg.Config, cleanupFunc) {
+	css := make([]*State, nPeers)
+	apps := make([]abci.Application, nPeers)
+	configs := make([]*cfg.Config, nPeers)
+	logger := consensusLogger()
+	configRootDirs := make([]string, nPeers)
+
+	for i := 0; i < nPeers; i++ {
+		validatorName := fmt.Sprintf("%s_%d", testName, i)
+		css[i], configRootDirs[i], configs[i], apps[i] =
+			createValidator(validatorName, tickerFunc, appFunc, genDoc, privVals[i], configOpts, logger)
+	}
+	return css, configs, func() {
 		for _, dir := range configRootDirs {
 			os.RemoveAll(dir)
 		}
 	}
+}
+
+// createValidator is an internal helper function that creates new validator as part of randConsensusNet
+func createValidator(
+	validatorName string,
+	tickerFunc func() TimeoutTicker,
+	appFunc func(string) abci.Application,
+	genDoc *types.GenesisDoc,
+	privVal types.PrivValidator,
+	configOpts []func(*cfg.Config),
+	logger log.Logger,
+) (consensusState *State, configRootDir string, thisConfig *cfg.Config, app abci.Application) {
+	stateDB := dbm.NewMemDB() // each state needs its own db
+	stateStore := sm.NewStore(stateDB)
+	state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+	thisConfig = ResetConfig(validatorName)
+	configRootDir = thisConfig.RootDir
+	for _, opt := range configOpts {
+		opt(thisConfig)
+	}
+	ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
+
+	app = appFunc(path.Join(config.DBDir(), validatorName))
+
+	if _, ok := app.(*kvstore.PersistentKVStoreApplication); ok {
+		// simulate handshake, receive app version. If don't do this, replay test will fail
+		state.Version.Consensus.App = kvstore.ProtocolVersion
+	}
+	vals := types.TM2PB.ValidatorUpdates(state.Validators)
+	app.InitChain(abci.RequestInitChain{ValidatorSet: &vals})
+
+	consensusState = newStateWithConfigAndBlockStore(thisConfig, state, privVal, app, stateDB)
+	if tickerFunc != nil {
+		consensusState.SetTimeoutTicker(tickerFunc())
+	}
+	proTxHash, _ := privVal.GetProTxHash()
+	consensusState.SetLogger(logger.With(
+		"validator", validatorName,
+		"proTxHash", proTxHash.ShortString(),
+		"module", "consensus"),
+	)
+
+	return consensusState, configRootDir, thisConfig, app
 }
 
 func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
@@ -1074,7 +1101,7 @@ func (*mockTicker) SetLogger(log.Logger) {}
 
 //------------------------------------
 
-func newCounter() abci.Application {
+func newCounter(string) abci.Application {
 	return counter.NewApplication(true)
 }
 

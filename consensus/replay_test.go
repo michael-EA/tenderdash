@@ -345,6 +345,7 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	css, genDoc, consensusConfig, cleanup := randConsensusNetWithPeers(
 		nVals,
 		nPeers,
+		0,
 		"replay_test",
 		newMockTickerFunc(true),
 		newPersistentKVStoreWithPath)
