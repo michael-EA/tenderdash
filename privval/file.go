@@ -547,6 +547,7 @@ func (pv *FilePV) UpdatePrivateKey(
 	thresholdPublicKey crypto.PubKey,
 	height int64,
 ) {
+	fmt.Printf("[DEBUG] FilePV UpdatePrivateKey height=%d quorumHash=%s\n", height, quorumHash.ShortString())
 	pv.Key.PrivateKeys[quorumHash.String()] = crypto.QuorumKeys{
 		PrivKey:            privateKey,
 		PubKey:             privateKey.PubKey(),
@@ -604,6 +605,13 @@ func (pv *FilePV) signVote(
 		}
 		return err
 	}
+
+	var qhs []string
+	for qh := range pv.Key.PrivateKeys {
+		qhs = append(qhs, qh)
+	}
+	proTxHash, _ := pv.GetProTxHash(context.Background())
+	fmt.Printf("[DEBUG] FilePV height=%d proTxHash=%s quorumHash=%s qhs=%v\n", height, proTxHash.ShortString(), quorumHash.ShortString(), qhs)
 
 	var privKey crypto.PrivKey
 	if quorumKeys, ok := pv.Key.PrivateKeys[quorumHash.String()]; ok {

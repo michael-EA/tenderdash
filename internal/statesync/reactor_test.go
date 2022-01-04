@@ -13,9 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 	dbm "github.com/tendermint/tm-db"
 
+	"github.com/dashevo/dashd-go/btcjson"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto"
+	dashcore "github.com/tendermint/tendermint/dashcore/rpc"
 	"github.com/tendermint/tendermint/internal/p2p"
 	"github.com/tendermint/tendermint/internal/proxy"
 	proxymocks "github.com/tendermint/tendermint/internal/proxy/mocks"
@@ -30,8 +32,14 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
+const (
+	chainID  = "test-chain"
+	llmqType = btcjson.LLMQType_5_60
+)
+
 var (
-	m = PrometheusMetrics(config.TestConfig().Instrumentation.Namespace)
+	vals, privVals = factory.GenerateMockValidatorSet(1)
+	m              = PrometheusMetrics(config.TestConfig().Instrumentation.Namespace)
 )
 
 type reactorTestSuite struct {
@@ -146,6 +154,8 @@ func setup(
 
 	cfg := config.DefaultStateSyncConfig()
 
+	mockClient := dashcore.NewMockClient(chainID, llmqType, privVals[0], false)
+
 	rts.reactor = NewReactor(
 		factory.DefaultTestChainID,
 		1,
@@ -162,6 +172,7 @@ func setup(
 		rts.blockStore,
 		"",
 		m,
+		mockClient,
 	)
 
 	rts.syncer = newSyncer(

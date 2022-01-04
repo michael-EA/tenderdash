@@ -88,8 +88,9 @@ const (
 
 	maxMsgSize = 1048576 // 1MB; NOTE: keep in sync with types.PartSet sizes.
 
-	blocksToContributeToBecomeGoodPeer = 10000
-	votesToContributeToBecomeGoodPeer  = 10000
+	blocksToContributeToBecomeGoodPeer  = 10000
+	votesToContributeToBecomeGoodPeer   = 10000
+	commitsToContributeToBecomeGoodPeer = 10000
 
 	listenerIDConsensus = "consensus-reactor"
 )
@@ -674,8 +675,10 @@ func (r *Reactor) sendCommit(ps *PeerState, commit *types.Commit) bool {
 	}
 	r.Logger.Debug("sending commit message", "ps", ps, "commit", commit)
 	r.voteCh.Out <- p2p.Envelope{
-		To:      ps.peerID,
-		Message: commit.ToProto(),
+		To: ps.peerID,
+		Message: &tmcons.Commit{
+			Commit: commit.ToProto(),
+		},
 	}
 	ps.SetHasCommit(commit)
 	return true
@@ -1154,6 +1157,15 @@ func (r *Reactor) handleVoteMessage(envelope p2p.Envelope, msgI Message) error {
 	}
 
 	switch msg := envelope.Message.(type) {
+	case *tmcons.Commit:
+		c, err := types.CommitFromProto(msg.Commit)
+		if err != nil {
+			return err
+		}
+		ps.SetHasCommit(c)
+
+		cMsg := msgI.(*CommitMessage)
+		r.state.peerMsgQueue <- msgInfo{cMsg, envelope.From}
 	case *tmcons.Vote:
 		r.state.mtx.RLock()
 		height, valSize, lastCommitSize := r.state.Height, r.state.Validators.Size(), r.state.LastPrecommits.Size()
@@ -1418,11 +1430,19 @@ func (r *Reactor) peerStatsRoutine() {
 		case msg := <-r.state.statsMsgQueue:
 			ps, ok := r.GetPeerState(msg.PeerID)
 			if !ok || ps == nil {
-				r.Logger.Debug("attempt to update stats for non-existent peer", "peer", msg.PeerID)
+				r.Logger.Debug("attempt to updateStatePrivVals stats for non-existent peer", "peer", msg.PeerID)
 				continue
 			}
 
 			switch msg.Msg.(type) {
+			case *CommitMessage:
+				if numCommits := ps.RecordCommit(); numCommits%commitsToContributeToBecomeGoodPeer == 0 {
+					r.peerUpdates.SendUpdate(p2p.PeerUpdate{
+						NodeID: msg.PeerID,
+						Status: p2p.PeerStatusGood,
+					})
+				}
+
 			case *VoteMessage:
 				if numVotes := ps.RecordVote(); numVotes%votesToContributeToBecomeGoodPeer == 0 {
 					r.peerUpdates.SendUpdate(p2p.PeerUpdate{

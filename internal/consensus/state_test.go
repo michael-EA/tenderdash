@@ -566,7 +566,7 @@ func TestStateLockNoPOL(t *testing.T) {
 
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 
-	cs2, _, err  := randState(config, 2) // needed so generated block is different than locked block
+	cs2, _, err := randState(config, 2) // needed so generated block is different than locked block
 	require.NoError(t, err)
 	// Since the quorum hash is also part of the sign ID we must make sure it's the same
 	cs2.LastValidators.QuorumHash = cs1.LastValidators.QuorumHash
