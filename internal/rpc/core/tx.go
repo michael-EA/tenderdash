@@ -32,8 +32,15 @@ func (env *Environment) Tx(ctx *rpctypes.Context, hash bytes.HexBytes, prove boo
 	for _, sink := range env.EventSinks {
 		if sink.Type() == indexer.KV {
 			r, err := sink.GetTxByHash(hash)
-			if r == nil {
+			if err != nil {
 				return nil, fmt.Errorf("tx (%X) not found, err: %w", hash, err)
+			}
+			if r == nil {
+				return nil, &rpctypes.RPCError{
+					Code:    coretypes.ErrNotFound,
+					Message: "tx not found",
+					Data:    "tx (" + hash.String() + ") not found",
+				}
 			}
 
 			height := r.Height
