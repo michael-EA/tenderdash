@@ -43,7 +43,7 @@ Verify that you have the latest version of Go installed:
 
 ```bash
 $ go version
-go version go1.15.x darwin/amd64
+go version go1.17.x darwin/amd64
 ```
 
 Make sure you have `$GOPATH` environment variable set:
@@ -451,7 +451,7 @@ After running the above commands you will see two generated files, go.mod and go
 ```go
 module github.com/me/example
 
-go 1.15
+go 1.17
 
 require (
 	github.com/dgraph-io/badger v1.6.2

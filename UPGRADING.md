@@ -8,7 +8,7 @@ This guide provides instructions for upgrading to specific versions of Tendermin
 This release is not compatible with previous blockchains due to changes to
 the encoding format (see "Protocol Buffers," below) and the block header (see "Blockchain Protocol").
 
-Note also that Tendermint 0.34 also requires Go 1.15 or higher. 
+Note also that Tendermint 0.34 also requires Go 1.17 or higher. 
 
 ### ABCI Changes
 

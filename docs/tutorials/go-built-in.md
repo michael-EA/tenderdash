@@ -593,7 +593,7 @@ After running the above commands you will see two generated files, go.mod and go
 ```go
 module github.com/me/example
 
-go 1.15
+go 1.17
 
 require (
 	github.com/dgraph-io/badger v1.6.2
