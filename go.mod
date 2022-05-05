@@ -8,7 +8,7 @@ require (
 	github.com/adlio/schema v1.2.3
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
-	github.com/dashevo/dashd-go v0.0.0-20210630125816-b417ad8eb165
+	github.com/dashevo/dashd-go v0.23.5
 	github.com/dashpay/bls-signatures/go-bindings v0.0.0-20201127091120-745324b80143
 	github.com/dgraph-io/badger/v2 v2.2007.3 // indirect
 	github.com/didip/tollbooth/v6 v6.1.1 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/tm-db v0.6.4
 	go.etcd.io/bbolt v1.3.6 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/net v0.0.0-20211208012354-db4efeb81f4b
 	google.golang.org/genproto v0.0.0-20210929214142-896c89f843d2 // indirect
 	google.golang.org/grpc v1.41.0
